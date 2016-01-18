@@ -127,4 +127,46 @@ class Bintray {
 			http.request(false);
 		});
 	}
+
+	public function createRepository(
+		subject:String,
+		repo:String,
+		?options:{
+			@:optional var type:String;
+			@:optional @:native("private") var _private:Bool;
+			@:optional var premium:Bool;
+			@:optional var desc:String;
+			@:optional var labels:Array<String>;
+		}
+	):Surprise<{
+		var name:String;
+		var owner:String;
+		var type:String;
+		@:native("private")
+		var _private:Bool;
+		var premium:Bool;
+		var desc:String;
+		var labels:Array<String>;
+		var created:String;
+		var package_count:Int;
+	}, String>
+	{
+		return Future.async(function(ret){
+			var url = api + '/repos/$subject/$repo';
+			var http = createHttp(url);
+			if (options != null)
+				http.setPostData(Json.stringify(options));
+			// http.onStatus = function(status) switch (status) {
+			// 	case 201:
+			// 		//pass
+			// 	case _:
+			// 		ret(Failure('Unknown HTTP status: $status'));
+			// }
+			http.onData = function(data) {
+				ret(Success(Json.parse(data)));
+			}
+			http.onError = function(err) ret(Failure(http.responseData));
+			http.request(true);
+		});
+	}
 }
