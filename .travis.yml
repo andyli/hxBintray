@@ -16,6 +16,9 @@ env:
 
 sudo: false
 
+install:
+  - haxelib install build-each.hxml
+
 script:
   - haxe build-neko.hxml && neko bin/Test.n
   - haxe build-java.hxml && java -jar bin/java/Test-Debug.jar
