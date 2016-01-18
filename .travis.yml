@@ -17,7 +17,7 @@ env:
 sudo: false
 
 install:
-  - haxelib install build-each.hxml
+  - yes | haxelib install build-each.hxml
 
 script:
   - haxe build-neko.hxml && neko bin/Test.n
