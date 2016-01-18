@@ -1,0 +1,3 @@
+build-each.hxml
+-java bin/java
+# -cmd export BINTRAY_USER= && export BINTRAY_APIKEY= && java -jar bin/java/Test-debug.jar
