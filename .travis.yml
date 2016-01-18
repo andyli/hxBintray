@@ -1,0 +1,21 @@
+language: haxe
+
+haxe:
+  - development
+  - 3.2.1
+
+os:
+  - linux
+  - osx
+
+env:
+  global:
+    - BINTRAY_USER=andyli
+    # BINTRAY_APIKEY
+    - secure: FMskAJ8aUOZPp18eHE5XYls95SclXV7aBl9EFBESjQbrCgIPGwTDT/KH+C8bk19XjKJDaIUm+O6yR1DV82dAJTzCkZ69z2LXX8HLRjG+o0XO700cWzkqEy2/WGZvYqwRmKvjkwMV2rVWqsDkLIh8WeUlX8xhwN9A8Ltz+MHRnYy6NmJdMZ5gIC/dVoXk4/JvzAhLM6mvS5JjlZmVqv7k8MybQmEj5p8m5AMSOxmbAoANVhVBK/YJ5Uk5/8IZJoXPK2uUSH80T6vizs/ocGIk4q/JLymjKMr5N9p8KIBZPxox+zVwxUZRzvmbcl8cOQLAzOtFfkdtwNT63LU6R6phRsbCgS0YjD5fkyT6iDcybU4iImMuTn7XuUAmGnHYY/HRe4psWgqzXjbjwrzfLtoi+7sYT5whMn7cWnC+WE62i19r4jVkVVV8xSeQnF1WgUL5Wvf/7PJIT9lzeX9Cj0tFp13MM0tU8+HMtlRRrk4kWdrvJzyZEqiHhpMF/yIOJuK6zfLw9z87ehMacU/d4aHSQq+822LjesAMCMrhwaOiO+TmGLGhWeU46Y2U6aB8qL6k2ZMkjUpbguE7pYAlvhMSfyhOsfSpZaEpmfBqDtfCsMbRzKN7CcyBGgK0GDxqu5lPZADH7gxP71AEbpca0pGGv0JXkYhqJ1DRQxv6FOy4H6M=
+
+sudo: false
+
+script:
+  - haxe build-neko.hxml && neko bin/Test.n
+  - haxe build-java.hxml && java -jar bin/java/Test-Debug.jar
