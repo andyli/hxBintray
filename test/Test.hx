@@ -17,7 +17,7 @@ class Test {
 				new Authentication(user, apiKey);
 		}
 		var runner = new Runner();
-		runner.addCase(new TestVersion(auth));
+		runner.addCase(new TestContent(auth));
 		runner.addCase(new TestDownload(auth));
 		Report.create(runner);
 		runner.run();

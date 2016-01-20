@@ -138,21 +138,21 @@ class Bintray {
 			var url = api + '/content/$subject/$repo/$pack/$version/$file_path';
 			var fileName = new Path(file_path).file;
 			var http = createHttp(url);
+			var out = new BytesOutput();
 			if (publish)
 				http.addParameter("publish", "1");
 			if (_override)
 				http.addParameter("override", "1");
 			if (explode)
 				http.addParameter("explode", "1");
-			http.fileTransfer(fileName, fileName, file, fileSize);
-			http.onStatus = function(status) switch (status) {
-				case 200:
-					ret(Success(Noise));
-				case _:
-					// pass
-			}
-			http.onError = function(err) ret(Failure(failMsg(http.responseData)));
-			http.request(false);
+			http.setPostData(file.readAll(fileSize).toString());
+			var error = null;
+			http.onError = function(err) error = err;
+			http.customRequest(false, out, null, "PUT");
+			if (error != null)
+				ret(Failure(failMsg(out.getBytes().toString())));
+			else
+				ret(Success(Noise));
 		});
 	}
 
