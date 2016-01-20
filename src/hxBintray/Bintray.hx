@@ -16,9 +16,17 @@ class Bintray {
 	function createHttp(url:String):Http {
 		var http = new Http(url);
 		if (auth != null)
-			http.addHeader("Authentication", auth.httpHeader);
+			http.addHeader("Authorization", auth.httpHeader);
 		http.noShutdown = true;
 		return http;
+	}
+
+	function failMsg(response:String):String {
+		return try {
+			Json.parse(response).message;
+		} catch (e:Dynamic) {
+			response;
+		}
 	}
 
 	function get(http:Http) {
@@ -34,10 +42,7 @@ class Bintray {
 			}
 			http.customRequest(false, out);
 			if (error != null) {
-				ret(Failure({
-					error: error,
-					response: out.getBytes().toString()
-				}));
+				ret(Failure(failMsg(out.getBytes().toString())));
 				return;
 			}
 			ret(Success({
@@ -53,18 +58,18 @@ class Bintray {
 			case Success({status: 200, response: response}):
 				return Future.sync(Success(response));
 			case Success({status: status, response: response}):
-				return Future.sync(Failure({error: 'Unknown HTTP status: $status', response: response.toString()}));
+				return Future.sync(Failure(failMsg(response.toString())));
 			case Failure(f):
 				return Future.sync(Failure(f));
 		});
 	}
 
-	public function download(
+	public function downloadContent(
 		subject:String,
 		repo:String,
 		file_path:String,
 		isProAccount = false
-	):Surprise<Bytes, {error:String, response:String}>
+	):Surprise<Bytes, String>
 	{
 		var url = if (isProAccount)
 			'https://dl.bintray.com/$subject/$repo/$file_path';
@@ -78,7 +83,7 @@ class Bintray {
 		repo:String,
 		file_path:String,
 		pack:String
-	):Surprise<Bytes, {error:String, response:String}>
+	):Surprise<Bytes, String>
 	{
 		file_path = [
 		for (part in file_path.split("/"))
@@ -90,7 +95,7 @@ class Bintray {
 		return get(http);
 	}
 
-	public function upload(
+	public function uploadContent(
 		file:Input,
 		fileSize:Int,
 		subject:String,
@@ -107,9 +112,6 @@ class Bintray {
 			var url = api + '/content/$subject/$repo/$pack/$version/$file_path';
 			var fileName = new Path(file_path).file;
 			var http = createHttp(url);
-			if (auth != null)
-				http.addHeader("Authentication", auth.httpHeader);
-			http.noShutdown = true;
 			if (publish)
 				http.addParameter("publish", "1");
 			if (_override)
@@ -121,10 +123,31 @@ class Bintray {
 				case 200:
 					ret(Success(Noise));
 				case _:
-					ret(Failure('Unknown HTTP status: $status'));
+					// pass
 			}
-			http.onError = function(err) ret(Failure(err));
+			http.onError = function(err) ret(Failure(failMsg(http.responseData)));
 			http.request(false);
+		});
+	}
+
+	public function deleteContent(
+		subject:String,
+		repo:String,
+		file_path:String
+	):Surprise<Noise, String>
+	{
+		return Future.async(function(ret){
+			var url = api + '/content/$subject/$repo/$file_path';
+			var http = createHttp(url);
+			var out = new BytesOutput();
+			http.onStatus = function(status) switch (status) {
+				case 200:
+					ret(Success(Noise));
+				case _:
+					// pass
+			}
+			http.onError = function(err) ret(Failure(failMsg(out.getBytes().toString())));
+			http.customRequest(false, out, null, "DELETE");
 		});
 	}
 
@@ -156,17 +179,31 @@ class Bintray {
 			var http = createHttp(url);
 			if (options != null)
 				http.setPostData(Json.stringify(options));
-			// http.onStatus = function(status) switch (status) {
-			// 	case 201:
-			// 		//pass
-			// 	case _:
-			// 		ret(Failure('Unknown HTTP status: $status'));
-			// }
 			http.onData = function(data) {
 				ret(Success(Json.parse(data)));
 			}
-			http.onError = function(err) ret(Failure(http.responseData));
+			http.onError = function(err) ret(Failure(failMsg(http.responseData)));
 			http.request(true);
+		});
+	}
+
+	public function deleteRepository(
+		subject:String,
+		repo:String
+	):Surprise<Noise, String>
+	{
+		return Future.async(function(ret){
+			var url = api + '/repos/$subject/$repo';
+			var http = createHttp(url);
+			var out = new BytesOutput();
+			http.onStatus = function(status) switch (status) {
+				case 200:
+					ret(Success(Noise));
+				case _:
+					// pass
+			}
+			http.onError = function(err) ret(Failure(failMsg(out.getBytes().toString())));
+			http.customRequest(false, out, null, "DELETE");
 		});
 	}
 }
