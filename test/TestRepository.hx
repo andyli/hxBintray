@@ -4,7 +4,8 @@ using tink.core.Outcome;
 import utest.Assert.*;
 
 class TestRepository extends Test {
-	var repo(default, never) = "hxBintray_test_repo";
+	var repo(get, null):String;
+	function get_repo() return repo != null ? repo : repo = "hxBintray_test_repo_" + Std.random(1000);
 	var subject(get, never):String;
 	function get_subject() return auth.user;
 
