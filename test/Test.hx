@@ -17,6 +17,9 @@ class Test {
 		firstTest();
 		middleTest();
 		lastTest();
+
+		// avoid no assertion
+		isTrue(true);
 	}
 
 	var firstTestDone:Void->Void;
