@@ -6,16 +6,9 @@ import utest.Assert.*;
 class TestVersion extends TestPackage {
 	var version(default, never):String = "0.1.0";
 
-	override function test():Void {
-		createRepository();
-		createPackage();
-		createVersion();
-		deleteVersion();
-		deletePackage();
-		deleteRepository();
-	}
+	override function firstTest():Void {
+		super.firstTest();
 
-	function createVersion():Void {
 		var versionOpt = {
 			name: version
 		}
@@ -39,7 +32,7 @@ class TestVersion extends TestPackage {
 			});
 	}
 
-	function deleteVersion():Void {
+	override function lastTest():Void {
 		// call api without user/key
 		var done = createAsync();
 		var bintray = new Bintray();
@@ -57,5 +50,7 @@ class TestVersion extends TestPackage {
 				isTrue(out.match(Success(_)));
 				done();
 			});
+
+		super.lastTest();
 	}
 }

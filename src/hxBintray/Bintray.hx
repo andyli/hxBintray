@@ -3,6 +3,7 @@ package hxBintray;
 import haxe.*;
 import haxe.io.*;
 import tink.CoreApi;
+using tink.core.Outcome;
 using StringTools;
 
 class Bintray {
@@ -29,7 +30,7 @@ class Bintray {
 		}
 	}
 
-	function get(http:Http) {
+	function getBytes(http:Http) {
 		return Future.async(function(ret){
 			var out = new BytesOutput();
 			var error = null;
@@ -54,7 +55,7 @@ class Bintray {
 			case Success({status: 302}):
 				var url = http.responseHeaders["Location"];
 				// trace(url);
-				return get(createHttp(url));
+				return getBytes(createHttp(url));
 			case Success({status: 200, response: response}):
 				return Future.sync(Success(response));
 			case Success({status: status, response: response}):
@@ -62,6 +63,13 @@ class Bintray {
 			case Failure(f):
 				return Future.sync(Failure(f));
 		});
+	}
+
+	function getObj<T>(http:Http):Surprise<T,String> {
+		return getBytes(http)
+			.map(function(out) return out.map(function(bytes)
+				return Json.parse(bytes.toString())
+			));
 	}
 
 	function post<T>(http:Http, ?postData:Dynamic):Surprise<T, String> {
@@ -101,7 +109,7 @@ class Bintray {
 			'https://dl.bintray.com/$subject/$repo/$file_path';
 		else
 			'https://$subject.bintray.com/$repo/$file_path';
-		return get(createHttp(url));
+		return getBytes(createHttp(url));
 	}
 
 	public function dynamicDownload(
@@ -118,7 +126,7 @@ class Bintray {
 		var url = api + '/content/$subject/$repo/$file_path';
 		var http = createHttp(url);
 		http.addParameter("bt_package", pack);
-		return get(http);
+		return getBytes(http);
 	}
 
 	public function uploadContent(
@@ -165,6 +173,15 @@ class Bintray {
 		var url = api + '/content/$subject/$repo/$file_path';
 		var http = createHttp(url);
 		return delete(http);
+	}
+
+	public function getRepositories(
+		subject:String
+	):Surprise<Array<{name:String, owner:String}>, String>
+	{
+		var url = api + '/repos/$subject';
+		var http = createHttp(url);
+		return getObj(http);
 	}
 
 	public function createRepository(

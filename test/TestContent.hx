@@ -8,18 +8,9 @@ class TestContent extends TestVersion {
 	var file_path(default, never):String = "path/to/something.txt";
 	var fileContent(default, never):String = "something here";
 
-	override function test():Void {
-		createRepository();
-		createPackage();
-		createVersion();
-		uploadContent();
-		deleteContent();
-		deleteVersion();
-		deletePackage();
-		deleteRepository();
-	}
+	override function firstTest():Void {
+		super.firstTest();
 
-	function uploadContent():Void {
 		var fileBytes = Bytes.ofString(fileContent);
 		var file = new BytesInput(fileBytes);
 
@@ -42,7 +33,7 @@ class TestContent extends TestVersion {
 			});
 	}
 
-	function deleteContent():Void {
+	override function lastTest():Void {
 		// call api without user/key
 		var done = createAsync();
 		var bintray = new Bintray();
@@ -60,5 +51,7 @@ class TestContent extends TestVersion {
 				isTrue(out.match(Success(_)));
 				done();
 			});
+
+		super.lastTest();
 	}
 }

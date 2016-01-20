@@ -6,14 +6,9 @@ import utest.Assert.*;
 class TestPackage extends TestRepository {
 	var pack(default, never):String = "test_package";
 
-	override function test():Void {
-		createRepository();
-		createPackage();
-		deletePackage();
-		deleteRepository();
-	}
+	override function firstTest():Void {
+		super.firstTest();
 
-	function createPackage():Void {
 		var packOpt = {
 			name: pack,
 			licenses: ["MIT"],
@@ -39,7 +34,7 @@ class TestPackage extends TestRepository {
 			});
 	}
 
-	function deletePackage():Void {
+	override function lastTest():Void {
 		// call api without user/key
 		var done = createAsync();
 		var bintray = new Bintray();
@@ -57,5 +52,7 @@ class TestPackage extends TestRepository {
 				isTrue(out.match(Success(_)));
 				done();
 			});
+
+		super.lastTest();
 	}
 }

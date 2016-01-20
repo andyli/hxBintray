@@ -9,12 +9,9 @@ class TestRepository extends Test {
 	var subject(get, never):String;
 	function get_subject() return auth.user;
 
-	function test():Void {
-		createRepository();
-		deleteRepository();
-	}
+	override function firstTest():Void {
+		super.firstTest();
 
-	function createRepository():Void {
 		// call api without user/key
 		var done = createAsync();
 		var bintray = new Bintray();
@@ -35,7 +32,7 @@ class TestRepository extends Test {
 			});
 	}
 
-	function deleteRepository():Void {
+	override function lastTest():Void {
 		// call api without user/key
 		var done = createAsync();
 		var bintray = new Bintray();
@@ -51,6 +48,25 @@ class TestRepository extends Test {
 		bintray.deleteRepository(subject, repo)
 			.handle(function(out){
 				isTrue(out.match(Success(_)));
+				done();
+			});
+
+		super.lastTest();
+	}
+
+	override function middleTest():Void {
+		super.middleTest();
+
+		getRepositories();
+	}
+
+	function getRepositories():Void {
+		var done = createAsync();
+		var bintray = new Bintray(auth);
+		bintray.getRepositories(subject)
+			.handle(function(out){
+				var repos = out.sure();
+				isTrue(repos.length > 0);
 				done();
 			});
 	}
