@@ -259,4 +259,53 @@ class Bintray {
 			http.customRequest(false, out, null, "DELETE");
 		});
 	}
+
+	public function createVersion(
+		subject:String,
+		repo:String,
+		pack:String,
+		?options:{
+			@:optional var name:String;
+			@:optional var released:String;
+			@:optional var desc:String;
+			@:optional var github_release_notes_file:String;
+			@:optional var github_use_tag_release_notes:String;
+			@:optional var vcs_tag:String;
+		}
+	):Surprise<Dynamic, String>
+	{
+		return Future.async(function(ret){
+			var url = api + '/packages/$subject/$repo/$pack/versions';
+			var http = createHttp(url);
+			if (options != null)
+				http.setPostData(Json.stringify(options));
+			http.onData = function(data) {
+				ret(Success(Json.parse(data)));
+			}
+			http.onError = function(err) ret(Failure(failMsg(http.responseData)));
+			http.request(true);
+		});
+	}
+
+	public function deleteVersion(
+		subject:String,
+		repo:String,
+		pack:String,
+		version:String
+	):Surprise<Noise, String>
+	{
+		return Future.async(function(ret){
+			var url = api + '/packages/$subject/$repo/$pack/versions/$version';
+			var http = createHttp(url);
+			var out = new BytesOutput();
+			http.onStatus = function(status) switch (status) {
+				case 200:
+					ret(Success(Noise));
+				case _:
+					// pass
+			}
+			http.onError = function(err) ret(Failure(failMsg(out.getBytes().toString())));
+			http.customRequest(false, out, null, "DELETE");
+		});
+	}
 }
