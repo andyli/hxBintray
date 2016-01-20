@@ -64,6 +64,32 @@ class Bintray {
 		});
 	}
 
+	function post<T>(http:Http, ?postData:Dynamic):Surprise<T, String> {
+		return Future.async(function(ret){
+			if (postData != null)
+				http.setPostData(Json.stringify(postData));
+			http.onData = function(data) {
+				ret(Success(Json.parse(data)));
+			}
+			http.onError = function(err) ret(Failure(failMsg(http.responseData)));
+			http.request(true);
+		});
+	}
+
+	function delete(http:Http):Surprise<Noise, String> {
+		return Future.async(function(ret){
+			var out = new BytesOutput();
+			http.onStatus = function(status) switch (status) {
+				case 200:
+					ret(Success(Noise));
+				case _:
+					// pass
+			}
+			http.onError = function(err) ret(Failure(failMsg(out.getBytes().toString())));
+			http.customRequest(false, out, null, "DELETE");
+		});
+	}
+
 	public function downloadContent(
 		subject:String,
 		repo:String,
@@ -136,19 +162,9 @@ class Bintray {
 		file_path:String
 	):Surprise<Noise, String>
 	{
-		return Future.async(function(ret){
-			var url = api + '/content/$subject/$repo/$file_path';
-			var http = createHttp(url);
-			var out = new BytesOutput();
-			http.onStatus = function(status) switch (status) {
-				case 200:
-					ret(Success(Noise));
-				case _:
-					// pass
-			}
-			http.onError = function(err) ret(Failure(failMsg(out.getBytes().toString())));
-			http.customRequest(false, out, null, "DELETE");
-		});
+		var url = api + '/content/$subject/$repo/$file_path';
+		var http = createHttp(url);
+		return delete(http);
 	}
 
 	public function createRepository(
@@ -174,17 +190,9 @@ class Bintray {
 		var package_count:Int;
 	}, String>
 	{
-		return Future.async(function(ret){
-			var url = api + '/repos/$subject/$repo';
-			var http = createHttp(url);
-			if (options != null)
-				http.setPostData(Json.stringify(options));
-			http.onData = function(data) {
-				ret(Success(Json.parse(data)));
-			}
-			http.onError = function(err) ret(Failure(failMsg(http.responseData)));
-			http.request(true);
-		});
+		var url = api + '/repos/$subject/$repo';
+		var http = createHttp(url);
+		return post(http, options);
 	}
 
 	public function deleteRepository(
@@ -192,19 +200,9 @@ class Bintray {
 		repo:String
 	):Surprise<Noise, String>
 	{
-		return Future.async(function(ret){
-			var url = api + '/repos/$subject/$repo';
-			var http = createHttp(url);
-			var out = new BytesOutput();
-			http.onStatus = function(status) switch (status) {
-				case 200:
-					ret(Success(Noise));
-				case _:
-					// pass
-			}
-			http.onError = function(err) ret(Failure(failMsg(out.getBytes().toString())));
-			http.customRequest(false, out, null, "DELETE");
-		});
+		var url = api + '/repos/$subject/$repo';
+		var http = createHttp(url);
+		return delete(http);
 	}
 
 	public function createPackage(
@@ -226,17 +224,9 @@ class Bintray {
 		}
 	):Surprise<Dynamic, String>
 	{
-		return Future.async(function(ret){
-			var url = api + '/packages/$subject/$repo';
-			var http = createHttp(url);
-			if (options != null)
-				http.setPostData(Json.stringify(options));
-			http.onData = function(data) {
-				ret(Success(Json.parse(data)));
-			}
-			http.onError = function(err) ret(Failure(failMsg(http.responseData)));
-			http.request(true);
-		});
+		var url = api + '/packages/$subject/$repo';
+		var http = createHttp(url);
+		return post(http, options);
 	}
 
 	public function deletePackage(
@@ -245,19 +235,9 @@ class Bintray {
 		pack:String
 	):Surprise<Noise, String>
 	{
-		return Future.async(function(ret){
-			var url = api + '/packages/$subject/$repo/$pack';
-			var http = createHttp(url);
-			var out = new BytesOutput();
-			http.onStatus = function(status) switch (status) {
-				case 200:
-					ret(Success(Noise));
-				case _:
-					// pass
-			}
-			http.onError = function(err) ret(Failure(failMsg(out.getBytes().toString())));
-			http.customRequest(false, out, null, "DELETE");
-		});
+		var url = api + '/packages/$subject/$repo/$pack';
+		var http = createHttp(url);
+		return delete(http);
 	}
 
 	public function createVersion(
@@ -274,17 +254,9 @@ class Bintray {
 		}
 	):Surprise<Dynamic, String>
 	{
-		return Future.async(function(ret){
-			var url = api + '/packages/$subject/$repo/$pack/versions';
-			var http = createHttp(url);
-			if (options != null)
-				http.setPostData(Json.stringify(options));
-			http.onData = function(data) {
-				ret(Success(Json.parse(data)));
-			}
-			http.onError = function(err) ret(Failure(failMsg(http.responseData)));
-			http.request(true);
-		});
+		var url = api + '/packages/$subject/$repo/$pack/versions';
+		var http = createHttp(url);
+		return post(http, options);
 	}
 
 	public function deleteVersion(
@@ -294,18 +266,8 @@ class Bintray {
 		version:String
 	):Surprise<Noise, String>
 	{
-		return Future.async(function(ret){
-			var url = api + '/packages/$subject/$repo/$pack/versions/$version';
-			var http = createHttp(url);
-			var out = new BytesOutput();
-			http.onStatus = function(status) switch (status) {
-				case 200:
-					ret(Success(Noise));
-				case _:
-					// pass
-			}
-			http.onError = function(err) ret(Failure(failMsg(out.getBytes().toString())));
-			http.customRequest(false, out, null, "DELETE");
-		});
+		var url = api + '/packages/$subject/$repo/$pack/versions/$version';
+		var http = createHttp(url);
+		return delete(http);
 	}
 }
