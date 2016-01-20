@@ -185,7 +185,7 @@ class Bintray {
 		});
 	}
 
-	function delete(http:Http):Surprise<Noise, String> {
+	function delete<T>(http:Http):Surprise<T, String> {
 		return Future.async(function(ret){
 			var out = new BytesOutput();
 			var error = null;
@@ -304,7 +304,7 @@ class Bintray {
 	{
 		var url = api + '/content/$subject/$repo/$file_path';
 		var http = createHttp(url);
-		return delete(http);
+		return delete(http).ignoreResponse();
 	}
 
 	public function getRepositories(
@@ -361,7 +361,7 @@ class Bintray {
 	{
 		var url = api + '/repos/$subject/$repo';
 		var http = createHttp(url);
-		return delete(http);
+		return delete(http).ignoreResponse();
 	}
 
 	public function getPackage(
@@ -419,7 +419,7 @@ class Bintray {
 	{
 		var url = api + '/packages/$subject/$repo/$pack';
 		var http = createHttp(url);
-		return delete(http);
+		return delete(http).ignoreResponse();
 	}
 
 	public function getVersion(
@@ -475,7 +475,7 @@ class Bintray {
 	{
 		var url = api + '/packages/$subject/$repo/$pack/versions/$version';
 		var http = createHttp(url);
-		return delete(http);
+		return delete(http).ignoreResponse();
 	}
 
 	public function getPackageFiles(
