@@ -117,11 +117,25 @@ class Bintray {
 		return Future.async(function(ret){
 			if (postData != null)
 				http.setPostData(Json.stringify(postData.toNative()));
-			http.onData = function(data) {
-				ret(Success(Json.parse(data)));
+			var status = -1;
+			http.onStatus = function(s) {
+				status = s;
 			}
-			http.onError = function(err) ret(Failure(failMsg(http.responseData)));
+			var error = null;
+			http.onError = function(err) {
+				error = err;
+			};
 			http.request(true);
+			if (error != null) {
+				ret(Failure(
+					if (http.responseData != null && http.responseData != "")
+						failMsg(http.responseData)
+					else
+						error
+				));
+			} else {
+				ret(Success(Json.parse(http.responseData)));
+			}
 		});
 	}
 
@@ -137,7 +151,35 @@ class Bintray {
 			http.customRequest(false, out, null, "PATCH");
 			var response = out.getBytes().toString();
 			if (error != null)
-				ret(Failure(failMsg(response)));
+				ret(Failure(
+					if (response != "")
+						failMsg(response)
+					else
+						error
+				));
+			else
+				ret(Success(Json.parse(response)));
+		});
+	}
+
+	function put<T>(http:Http, ?postData:Dynamic):Surprise<T, String> {
+		return Future.async(function(ret){
+			var out = new BytesOutput();
+			if (postData != null)
+				http.setPostData(Json.stringify(postData.toNative()));
+			var error = null;
+			http.onError = function(err) {
+				error = err;
+			};
+			http.customRequest(false, out, null, "PUT");
+			var response = out.getBytes().toString();
+			if (error != null)
+				ret(Failure(
+					if (response != "")
+						failMsg(response)
+					else
+						error
+				));
 			else
 				ret(Success(Json.parse(response)));
 		});
@@ -146,14 +188,21 @@ class Bintray {
 	function delete(http:Http):Surprise<Noise, String> {
 		return Future.async(function(ret){
 			var out = new BytesOutput();
-			http.onStatus = function(status) switch (status) {
-				case 200:
-					ret(Success(Noise));
-				case _:
-					// pass
-			}
-			http.onError = function(err) ret(Failure(failMsg(out.getBytes().toString())));
+			var error = null;
+			http.onError = function(err) {
+				error = err;
+			};
 			http.customRequest(false, out, null, "DELETE");
+			var response = out.getBytes().toString();
+			if (error != null)
+				ret(Failure(
+					if (response != "")
+						failMsg(response)
+					else
+						error
+				));
+			else
+				ret(Success(Json.parse(response)));
 		});
 	}
 
@@ -221,6 +270,30 @@ class Bintray {
 			else
 				ret(Success(Noise));
 		});
+	}
+
+	public function publishUploadedContent(
+		subject:String,
+		repo:String,
+		pack:String,
+		version:String,
+		publish_wait_for_secs:Int = 0
+	):Surprise<Int, String>
+	{
+		var url = api + '/content/$subject/$repo/$pack/$version/publish';
+		var http = createHttp(url);
+		if (publish_wait_for_secs > 10)
+			http.cnxTimeout = publish_wait_for_secs + 5;
+		else if (publish_wait_for_secs < 0)
+			http.cnxTimeout = 100;
+		var opts:Dynamic = {};
+		opts.publish_wait_for_secs = publish_wait_for_secs;
+		return post(http, opts)
+			.map(function (out) {
+				return out.map(function(r){
+					return r.files;
+				});
+			});
 	}
 
 	public function deleteContent(
@@ -403,5 +476,80 @@ class Bintray {
 		var url = api + '/packages/$subject/$repo/$pack/versions/$version';
 		var http = createHttp(url);
 		return delete(http);
+	}
+
+	public function getPackageFiles(
+		subject:String,
+		repo:String,
+		pack:String,
+		include_unpublished:Bool = false
+	):Surprise<Array<File>, String>
+	{
+		var url = api + '/packages/$subject/$repo/$pack/files';
+		var http = createHttp(url);
+		if (include_unpublished)
+			http.addParameter("include_unpublished", "1");
+		return getObj(http);
+	}
+
+	public function getVersionFiles(
+		subject:String,
+		repo:String,
+		pack:String,
+		version:String,
+		include_unpublished:Bool = false
+	):Surprise<Array<File>, String>
+	{
+		var url = api + '/packages/$subject/$repo/$pack/versions/$version/files';
+		var http = createHttp(url);
+		if (include_unpublished)
+			http.addParameter("include_unpublished", "1");
+		return getObj(http);
+	}
+
+	public function fileSearchByName(
+		name:String,
+		subject:String = null,
+		repo:String = null
+	):Surprise<Array<File>, String>
+	{
+		var url = api + '/search/file';
+		var http = createHttp(url);
+		http.addParameter("name", name);
+		if (subject != null)
+			http.addParameter("subject", subject);
+		if (repo != null)
+			http.addParameter("repo", repo);
+		return getObj(http);
+	}
+
+	public function fileSearchByChecksum(
+		sha1:String,
+		subject:String = null,
+		repo:String = null
+	):Surprise<Array<File>, String>
+	{
+		var url = api + '/search/file';
+		var http = createHttp(url);
+		http.addParameter("sha1", sha1);
+		if (subject != null)
+			http.addParameter("subject", subject);
+		if (repo != null)
+			http.addParameter("repo", repo);
+		return getObj(http);
+	}
+
+	public function fileInDownloadList(
+		subject:String,
+		repo:String,
+		file_path:String,
+		list_in_downloads:Bool
+	):Surprise<Noise, String>
+	{
+		var url = api + '/file_metadata/$subject/$repo/$file_path';
+		var http = createHttp(url);
+		return put(http, {
+			list_in_downloads: list_in_downloads
+		}).ignoreResponse();
 	}
 }

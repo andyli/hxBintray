@@ -1,5 +1,5 @@
 import hxBintray.*;
-import tink.core.*;
+import tink.CoreApi;
 import utest.*;
 import utest.ui.*;
 import utest.Assert.*;
@@ -8,6 +8,15 @@ class Test {
 	public var auth(default, null):Authentication;
 	public function new(auth:Authentication):Void {
 		this.auth = auth;
+	}
+
+	function isSuccess<T,E>(s:Outcome<T,E>, ?pos:haxe.PosInfos){
+		return switch (s) {
+			case Success(_):
+				pass(null, pos);
+			case Failure(f):
+				fail('Got Failure: $f', pos);
+		}
 	}
 
 	function test():Void {
