@@ -3,22 +3,27 @@ import tink.core.*;
 using tink.core.Outcome;
 import utest.Assert.*;
 
-class TestRepository extends Test {
-	var repo(get, null):String;
-	function get_repo() return repo != null ? repo : repo = "hxBintray_test_repo_" + Std.random(1000);
-	var subject(get, never):String;
-	function get_subject() return auth.user;
+class TestPackage extends TestRepository {
+	var pack(default, never):String = "test_package";
 
-	function test():Void {
+	override function test():Void {
 		createRepository();
+		createPackage();
+		deletePackage();
 		deleteRepository();
 	}
 
-	function createRepository():Void {
+	function createPackage():Void {
+		var packOpt = {
+			name: pack,
+			licenses: ["MIT"],
+			vcs_url: "https://github.com/andyli/hxBintray.git"
+		}
+
 		// call api without user/key
 		var done = createAsync();
 		var bintray = new Bintray();
-		bintray.createRepository(subject, repo)
+		bintray.createPackage(subject, repo, packOpt)
 			.handle(function(out){
 				isTrue(out.match(Failure(_)));
 				done();
@@ -27,19 +32,18 @@ class TestRepository extends Test {
 		// should success
 		var done = createAsync();
 		var bintray = new Bintray(auth);
-		bintray.createRepository(subject, repo)
+		bintray.createPackage(subject, repo, packOpt)
 			.handle(function(out){
-				var r = out.sure();
-				equals(repo, r.name);
+				isTrue(out.match(Success(_)));
 				done();
 			});
 	}
 
-	function deleteRepository():Void {
+	function deletePackage():Void {
 		// call api without user/key
 		var done = createAsync();
 		var bintray = new Bintray();
-		bintray.deleteRepository(subject, repo)
+		bintray.deletePackage(subject, repo, pack)
 			.handle(function(out){
 				isTrue(out.match(Failure(_)));
 				done();
@@ -48,7 +52,7 @@ class TestRepository extends Test {
 		// should success
 		var done = createAsync();
 		var bintray = new Bintray(auth);
-		bintray.deleteRepository(subject, repo)
+		bintray.deletePackage(subject, repo, pack)
 			.handle(function(out){
 				isTrue(out.match(Success(_)));
 				done();

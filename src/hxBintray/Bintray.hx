@@ -206,4 +206,57 @@ class Bintray {
 			http.customRequest(false, out, null, "DELETE");
 		});
 	}
+
+	public function createPackage(
+		subject:String,
+		repo:String,
+		?options:{
+			@:optional var name:String;
+			@:optional var desc:String;
+			@:optional var labels:Array<String>;
+			@:optional var licenses:Array<String>;
+			@:optional var custom_licenses:Array<String>;
+			@:optional var vcs_url:String;
+			@:optional var website_url:String;
+			@:optional var issue_tracker_url:String;
+			@:optional var github_repo:String;
+			@:optional var github_release_notes_file:String;
+			@:optional var public_download_numbers:Bool;
+			@:optional var public_stats:Bool;
+		}
+	):Surprise<Dynamic, String>
+	{
+		return Future.async(function(ret){
+			var url = api + '/packages/$subject/$repo';
+			var http = createHttp(url);
+			if (options != null)
+				http.setPostData(Json.stringify(options));
+			http.onData = function(data) {
+				ret(Success(Json.parse(data)));
+			}
+			http.onError = function(err) ret(Failure(failMsg(http.responseData)));
+			http.request(true);
+		});
+	}
+
+	public function deletePackage(
+		subject:String,
+		repo:String,
+		pack:String
+	):Surprise<Noise, String>
+	{
+		return Future.async(function(ret){
+			var url = api + '/packages/$subject/$repo/$pack';
+			var http = createHttp(url);
+			var out = new BytesOutput();
+			http.onStatus = function(status) switch (status) {
+				case 200:
+					ret(Success(Noise));
+				case _:
+					// pass
+			}
+			http.onError = function(err) ret(Failure(failMsg(out.getBytes().toString())));
+			http.customRequest(false, out, null, "DELETE");
+		});
+	}
 }
