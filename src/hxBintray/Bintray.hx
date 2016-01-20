@@ -5,6 +5,7 @@ import haxe.io.*;
 import tink.CoreApi;
 using tink.core.Outcome;
 using StringTools;
+using hxBintray.Bintray;
 
 class Bintray {
 	public var api:String = "https://bintray.com/api/v1";
@@ -27,6 +28,46 @@ class Bintray {
 			Json.parse(response).message;
 		} catch (e:Dynamic) {
 			response;
+		}
+	}
+
+	static function ignoreResponse<T,E>(r:Surprise<T,E>):Surprise<Noise,E> {
+		return r.map(function(out) return out.map(function(_) return Noise));
+	}
+
+	static function toNative(obj:Dynamic):Dynamic {
+		var array = Std.instance(obj, Array);
+		if (array != null) {
+			return [for (e in array) toNative(e)];
+		} else {
+			var ret = {};
+			for (f in Reflect.fields(obj)) {
+				var _f = switch (f) {
+					case "priv": "private";
+					case "pack": "package";
+					case _: f;
+				}
+				Reflect.setField(ret, _f, Reflect.field(obj, f));
+			}
+			return ret;
+		}
+	}
+
+	static function toHaxe(obj:Dynamic):Dynamic {
+		var array = Std.instance(obj, Array);
+		if (array != null) {
+			return [for (e in array) toHaxe(e)];
+		} else {
+			var ret = {};
+			for (f in Reflect.fields(obj)) {
+				var _f = switch (f) {
+					case "private": "priv";
+					case "package": "pack";
+					case _: f;
+				}
+				Reflect.setField(ret, _f, Reflect.field(obj, f));
+			}
+			return ret;
 		}
 	}
 
@@ -68,19 +109,37 @@ class Bintray {
 	function getObj<T>(http:Http):Surprise<T,String> {
 		return getBytes(http)
 			.map(function(out) return out.map(function(bytes)
-				return Json.parse(bytes.toString())
+				return Json.parse(bytes.toString()).toHaxe()
 			));
 	}
 
 	function post<T>(http:Http, ?postData:Dynamic):Surprise<T, String> {
 		return Future.async(function(ret){
 			if (postData != null)
-				http.setPostData(Json.stringify(postData));
+				http.setPostData(Json.stringify(postData.toNative()));
 			http.onData = function(data) {
 				ret(Success(Json.parse(data)));
 			}
 			http.onError = function(err) ret(Failure(failMsg(http.responseData)));
 			http.request(true);
+		});
+	}
+
+	function patch<T>(http:Http, ?postData:Dynamic):Surprise<T, String> {
+		return Future.async(function(ret){
+			var out = new BytesOutput();
+			if (postData != null)
+				http.setPostData(Json.stringify(postData.toNative()));
+			var error = null;
+			http.onError = function(err) {
+				error = err;
+			};
+			http.customRequest(false, out, null, "PATCH");
+			var response = out.getBytes().toString();
+			if (error != null)
+				ret(Failure(failMsg(response)));
+			else
+				ret(Success(Json.parse(response)));
 		});
 	}
 
@@ -184,32 +243,42 @@ class Bintray {
 		return getObj(http);
 	}
 
+	public function getRepository(
+		subject:String,
+		repo:String
+	):Surprise<Repository, String>
+	{
+		var url = api + '/repos/$subject/$repo';
+		var http = createHttp(url);
+		return getObj(http);
+	}
+
 	public function createRepository(
 		subject:String,
 		repo:String,
 		?options:{
 			@:optional var type:String;
-			@:optional @:native("private") var _private:Bool;
+			@:optional @:native("private") var priv:Bool;
 			@:optional var premium:Bool;
 			@:optional var desc:String;
 			@:optional var labels:Array<String>;
 		}
-	):Surprise<{
-		var name:String;
-		var owner:String;
-		var type:String;
-		@:native("private")
-		var _private:Bool;
-		var premium:Bool;
-		var desc:String;
-		var labels:Array<String>;
-		var created:String;
-		var package_count:Int;
-	}, String>
+	):Surprise<Repository, String>
 	{
 		var url = api + '/repos/$subject/$repo';
 		var http = createHttp(url);
 		return post(http, options);
+	}
+
+	public function updateRepository(
+		subject:String,
+		repo:String,
+		info:Repository
+	):Surprise<Noise, String>
+	{
+		var url = api + '/repos/$subject/$repo';
+		var http = createHttp(url);
+		return patch(http, info).ignoreResponse();
 	}
 
 	public function deleteRepository(
@@ -220,6 +289,17 @@ class Bintray {
 		var url = api + '/repos/$subject/$repo';
 		var http = createHttp(url);
 		return delete(http);
+	}
+
+	public function getPackage(
+		subject:String,
+		repo:String,
+		pack:String
+	):Surprise<Package, String>
+	{
+		var url = api + '/packages/$subject/$repo/$pack';
+		var http = createHttp(url);
+		return getObj(http);
 	}
 
 	public function createPackage(
@@ -239,11 +319,23 @@ class Bintray {
 			@:optional var public_download_numbers:Bool;
 			@:optional var public_stats:Bool;
 		}
-	):Surprise<Dynamic, String>
+	):Surprise<Package, String>
 	{
 		var url = api + '/packages/$subject/$repo';
 		var http = createHttp(url);
 		return post(http, options);
+	}
+
+	public function updatePackage(
+		subject:String,
+		repo:String,
+		pack:String,
+		info:Package
+	):Surprise<Noise, String>
+	{
+		var url = api + '/packages/$subject/$repo/$pack';
+		var http = createHttp(url);
+		return patch(http, info).ignoreResponse();
 	}
 
 	public function deletePackage(
@@ -255,6 +347,18 @@ class Bintray {
 		var url = api + '/packages/$subject/$repo/$pack';
 		var http = createHttp(url);
 		return delete(http);
+	}
+
+	public function getVersion(
+		subject:String,
+		repo:String,
+		pack:String,
+		version:String = "_latest"
+	):Surprise<Version, String>
+	{
+		var url = api + '/packages/$subject/$repo/$pack/versions/$version';
+		var http = createHttp(url);
+		return getObj(http);
 	}
 
 	public function createVersion(
@@ -274,6 +378,19 @@ class Bintray {
 		var url = api + '/packages/$subject/$repo/$pack/versions';
 		var http = createHttp(url);
 		return post(http, options);
+	}
+
+	public function updateVersion(
+		subject:String,
+		repo:String,
+		pack:String,
+		version:String,
+		info:Version
+	):Surprise<Noise, String>
+	{
+		var url = api + '/packages/$subject/$repo/$pack/versions/$version';
+		var http = createHttp(url);
+		return patch(http, info).ignoreResponse();
 	}
 
 	public function deleteVersion(

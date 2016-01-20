@@ -2,6 +2,7 @@ import hxBintray.*;
 import tink.core.*;
 using tink.core.Outcome;
 import utest.Assert.*;
+using Lambda;
 
 class TestRepository extends Test {
 	var repo(get, null):String;
@@ -28,6 +29,7 @@ class TestRepository extends Test {
 			.handle(function(out){
 				var r = out.sure();
 				equals(repo, r.name);
+				equals(auth.user, r.owner);
 				done();
 			});
 	}
@@ -58,6 +60,8 @@ class TestRepository extends Test {
 		super.middleTest();
 
 		getRepositories();
+		getRepository();
+		updateRepository();
 	}
 
 	function getRepositories():Void {
@@ -67,6 +71,36 @@ class TestRepository extends Test {
 			.handle(function(out){
 				var repos = out.sure();
 				isTrue(repos.length > 0);
+				var info = repos.find(function(info) {
+					return info.name == repo;
+				});
+				notNull(info);
+				equals(auth.user, info.owner);
+				done();
+			});
+	}
+
+	function getRepository():Void {
+		var done = createAsync();
+		var bintray = new Bintray(auth);
+		bintray.getRepository(subject, repo)
+			.handle(function(out){
+				var info = out.sure();
+				equals(repo, info.name);
+				equals(auth.user, info.owner);
+				done();
+			});
+	}
+
+	function updateRepository():Void {
+		var done = createAsync();
+		var newInfo = {
+			desc: "This is just a test."
+		};
+		var bintray = new Bintray(auth);
+		bintray.updateRepository(subject, repo, newInfo)
+			.handle(function(out){
+				isTrue(out.match(Success(_)));
 				done();
 			});
 	}

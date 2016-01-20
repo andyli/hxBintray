@@ -55,4 +55,37 @@ class TestPackage extends TestRepository {
 
 		super.lastTest();
 	}
+
+	override function middleTest():Void {
+		super.middleTest();
+
+		getPackage();
+		updatePackage();
+	}
+
+	function getPackage():Void {
+		var done = createAsync();
+		var bintray = new Bintray(auth);
+		bintray.getPackage(subject, repo, pack)
+			.handle(function(out){
+				var info = out.sure();
+				equals(pack, info.name);
+				equals(repo, info.repo);
+				equals(auth.user, info.owner);
+				done();
+			});
+	}
+
+	function updatePackage():Void {
+		var done = createAsync();
+		var newInfo = {
+			desc: "This updated."
+		};
+		var bintray = new Bintray(auth);
+		bintray.updatePackage(subject, repo, pack, newInfo)
+			.handle(function(out){
+				isTrue(out.match(Success(_)));
+				done();
+			});
+	}
 }

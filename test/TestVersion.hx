@@ -53,4 +53,38 @@ class TestVersion extends TestPackage {
 
 		super.lastTest();
 	}
+
+	override function middleTest():Void {
+		super.middleTest();
+
+		getVersion();
+		updateVersion();
+	}
+
+	function getVersion():Void {
+		var done = createAsync();
+		var bintray = new Bintray(auth);
+		bintray.getVersion(subject, repo, pack, version)
+			.handle(function(out){
+				var info = out.sure();
+				equals(version, info.name);
+				equals(repo, info.repo);
+				equals(pack, info.pack);
+				equals(auth.user, info.owner);
+				done();
+			});
+	}
+
+	function updateVersion():Void {
+		var done = createAsync();
+		var newInfo = {
+			desc: "This is updated version desc."
+		};
+		var bintray = new Bintray(auth);
+		bintray.updateVersion(subject, repo, pack, version, newInfo)
+			.handle(function(out){
+				isTrue(out.match(Success(_)));
+				done();
+			});
+	}
 }
