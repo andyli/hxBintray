@@ -23,13 +23,25 @@ class Test {
 		firstTestDone = createAsync();
 		middleTestDone = createAsync();
 		lastTestDone = createAsync();
-		Future.ofMany([for (f in firstTest()) f()])
-			.flatMap(function(_) return Future.ofMany([for (f in middleTest()) f()]))
-			.flatMap(function(_) return Future.ofMany([for (f in lastTest()) f()]))
+
+		seq(firstTest())
+			.flatMap(function(_) return seq(middleTest()))
+			.flatMap(function(_) return seq(lastTest()))
 			.handle(function(_){});
 
 		// avoid no assertion
 		pass();
+	}
+
+	static function seq(fs:Array<Void->Future<Noise>>):Future<Noise> {
+		switch (fs.length) {
+			case 0:
+				return Future.sync(Noise);
+			case _:
+				return fs[0]().flatMap(function(_){
+					return seq(fs.slice(1));
+				});
+		}
 	}
 
 	var firstTestDone:Void->Void;
