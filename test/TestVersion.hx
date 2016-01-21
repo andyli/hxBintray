@@ -6,85 +6,96 @@ import utest.Assert.*;
 class TestVersion extends TestPackage {
 	public var version(default, never):String = "0.1.0";
 
-	override function firstTest():Void {
-		super.firstTest();
-
+	override function firstTest() {
 		var versionOpt = {
 			name: version
 		}
-
-		// call api without user/key
-		var done = createAsync();
-		var bintray = new Bintray();
-		bintray.createVersion(subject, repo, pack, versionOpt)
-			.handle(function(out){
-				isTrue(out.match(Failure(_)));
-				done();
-			});
-
-		// should success
-		var done = createAsync();
-		var bintray = new Bintray(auth);
-		bintray.createVersion(subject, repo, pack, versionOpt)
-			.handle(function(out){
-				isTrue(out.match(Success(_)));
-				done();
-			});
+		return super.firstTest().concat([
+			function(){
+				// call api without user/key
+				var done = createAsync();
+				var bintray = new Bintray();
+				return bintray.createVersion(subject, repo, pack, versionOpt)
+					.map(function(out):Noise {
+						isTrue(out.match(Failure(_)));
+						done();
+						return Noise;
+					});
+			},
+			function(){
+				// should success
+				var done = createAsync();
+				var bintray = new Bintray(auth);
+				return bintray.createVersion(subject, repo, pack, versionOpt)
+					.map(function(out):Noise {
+						isTrue(out.match(Success(_)));
+						done();
+						return Noise;
+					});
+			},
+		]);
 	}
 
-	override function lastTest():Void {
-		// call api without user/key
-		var done = createAsync();
-		var bintray = new Bintray();
-		bintray.deleteVersion(subject, repo, pack, version)
-			.handle(function(out){
-				isTrue(out.match(Failure(_)));
-				done();
-			});
-
-		// should success
-		var done = createAsync();
-		var bintray = new Bintray(auth);
-		bintray.deleteVersion(subject, repo, pack, version)
-			.handle(function(out){
-				isTrue(out.match(Success(_)));
-				done();
-			});
-
-		super.lastTest();
+	override function lastTest() {
+		return [
+			function(){
+				// call api without user/key
+				var done = createAsync();
+				var bintray = new Bintray();
+				return bintray.deleteVersion(subject, repo, pack, version)
+					.map(function(out):Noise {
+						isTrue(out.match(Failure(_)));
+						done();
+						return Noise;
+					});
+			},
+			function(){
+				// should success
+				var done = createAsync();
+				var bintray = new Bintray(auth);
+				return bintray.deleteVersion(subject, repo, pack, version)
+					.map(function(out):Noise {
+						isTrue(out.match(Success(_)));
+						done();
+						return Noise;
+					});
+			},
+		].concat(super.lastTest());
 	}
 
-	override function middleTest():Void {
-		super.middleTest();
-
-		getVersion();
-		updateVersion();
+	override function middleTest() {
+		return super.middleTest().concat([
+			getVersion,
+			updateVersion,
+		]);
 	}
 
-	function getVersion():Void {
+	function getVersion() {
 		var done = createAsync();
 		var bintray = new Bintray(auth);
-		bintray.getVersion(subject, repo, pack, version)
-			.handle(function(out){
+		return bintray.getVersion(subject, repo, pack, version)
+			.map(function(out):Noise {
 				var info = out.sure();
 				equals(version, info.name);
 				equals(repo, info.repo);
 				equals(pack, info.pack);
 				equals(auth.user, info.owner);
 				done();
+				return Noise;
 			});
 	}
 
-	function updateVersion():Void {
+	function updateVersion() {
 		var done = createAsync();
 		var newInfo = {
 			desc: "This is updated version desc."
 		};
 		var bintray = new Bintray(auth);
-		bintray.updateVersion(subject, repo, pack, version, newInfo)
-			.handle(function(out){
+		return bintray.updateVersion(subject, repo, pack, version, newInfo)
+			.map(function(out):Noise {
 				isTrue(out.match(Success(_)));
 				done();
+				return Noise;
 			});
 	}
 }

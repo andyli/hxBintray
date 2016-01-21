@@ -6,86 +6,98 @@ import utest.Assert.*;
 class TestPackage extends TestRepository {
 	public var pack(default, never):String = "test_package";
 
-	override function firstTest():Void {
-		super.firstTest();
-
+	override function firstTest() {
 		var packOpt = {
 			name: pack,
 			licenses: ["MIT"],
 			vcs_url: "https://github.com/andyli/hxBintray.git"
 		}
-
-		// call api without user/key
-		var done = createAsync();
-		var bintray = new Bintray();
-		bintray.createPackage(subject, repo, packOpt)
-			.handle(function(out){
-				isTrue(out.match(Failure(_)));
-				done();
-			});
-
-		// should success
-		var done = createAsync();
-		var bintray = new Bintray(auth);
-		bintray.createPackage(subject, repo, packOpt)
-			.handle(function(out){
-				isTrue(out.match(Success(_)));
-				done();
-			});
+		return super.firstTest()
+			.concat([
+				function(){
+					// call api without user/key
+					var done = createAsync();
+					var bintray = new Bintray();
+					return bintray.createPackage(subject, repo, packOpt)
+						.map(function(out):Noise {
+							isTrue(out.match(Failure(_)));
+							done();
+							return Noise;
+						});
+				},
+				function(){				
+					// should success
+					var done = createAsync();
+					var bintray = new Bintray(auth);
+					return bintray.createPackage(subject, repo, packOpt)
+						.map(function(out):Noise {
+							isTrue(out.match(Success(_)));
+							done();
+							return Noise;
+						});
+				},
+			]);
 	}
 
-	override function lastTest():Void {
-		// call api without user/key
-		var done = createAsync();
-		var bintray = new Bintray();
-		bintray.deletePackage(subject, repo, pack)
-			.handle(function(out){
-				isTrue(out.match(Failure(_)));
-				done();
-			});
-
-		// should success
-		var done = createAsync();
-		var bintray = new Bintray(auth);
-		bintray.deletePackage(subject, repo, pack)
-			.handle(function(out){
-				isTrue(out.match(Success(_)));
-				done();
-			});
-
-		super.lastTest();
+	override function lastTest() {
+		return [
+			function(){
+				// call api without user/key
+				var done = createAsync();
+				var bintray = new Bintray();
+				return bintray.deletePackage(subject, repo, pack)
+					.map(function(out):Noise {
+						isTrue(out.match(Failure(_)));
+						done();
+						return Noise;
+					});
+			},
+			function(){
+				// should success
+				var done = createAsync();
+				var bintray = new Bintray(auth);
+				return bintray.deletePackage(subject, repo, pack)
+					.map(function(out):Noise {
+						isTrue(out.match(Success(_)));
+						done();
+						return Noise;
+					});
+			},
+		].concat(super.lastTest());
 	}
 
-	override function middleTest():Void {
-		super.middleTest();
-
-		getPackage();
-		updatePackage();
+	override function middleTest() {
+		return super.middleTest().concat([
+			getPackage,
+			updatePackage,
+		]);
 	}
 
-	function getPackage():Void {
+	function getPackage() {
 		var done = createAsync();
 		var bintray = new Bintray(auth);
-		bintray.getPackage(subject, repo, pack)
-			.handle(function(out){
+		return bintray.getPackage(subject, repo, pack)
+			.map(function(out):Noise {
 				var info = out.sure();
 				equals(pack, info.name);
 				equals(repo, info.repo);
 				equals(auth.user, info.owner);
 				done();
+				return Noise;
 			});
 	}
 
-	function updatePackage():Void {
+	function updatePackage() {
 		var done = createAsync();
 		var newInfo = {
 			desc: "This updated."
 		};
 		var bintray = new Bintray(auth);
-		bintray.updatePackage(subject, repo, pack, newInfo)
-			.handle(function(out){
+		return bintray.updatePackage(subject, repo, pack, newInfo)
+			.map(function(out):Noise {
 				isTrue(out.match(Success(_)));
 				done();
+				return Noise;
 			});
 	}
 }

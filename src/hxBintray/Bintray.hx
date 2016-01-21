@@ -5,7 +5,8 @@ import haxe.io.*;
 import tink.CoreApi;
 using tink.core.Outcome;
 using StringTools;
-using hxBintray.Bintray;
+using hxBintray.Util;
+import hxBintray.Util.*;
 
 class Bintray {
 	public var api:String = "https://bintray.com/api/v1";
@@ -28,46 +29,6 @@ class Bintray {
 			Json.parse(response).message;
 		} catch (e:Dynamic) {
 			response;
-		}
-	}
-
-	static function ignoreResponse<T,E>(r:Surprise<T,E>):Surprise<Noise,E> {
-		return r.map(function(out) return out.map(function(_) return Noise));
-	}
-
-	static function toNative(obj:Dynamic):Dynamic {
-		var array = Std.instance(obj, Array);
-		if (array != null) {
-			return [for (e in array) toNative(e)];
-		} else {
-			var ret = {};
-			for (f in Reflect.fields(obj)) {
-				var _f = switch (f) {
-					case "priv": "private";
-					case "pack": "package";
-					case _: f;
-				}
-				Reflect.setField(ret, _f, Reflect.field(obj, f));
-			}
-			return ret;
-		}
-	}
-
-	static function toHaxe(obj:Dynamic):Dynamic {
-		var array = Std.instance(obj, Array);
-		if (array != null) {
-			return [for (e in array) toHaxe(e)];
-		} else {
-			var ret = {};
-			for (f in Reflect.fields(obj)) {
-				var _f = switch (f) {
-					case "private": "priv";
-					case "package": "pack";
-					case _: f;
-				}
-				Reflect.setField(ret, _f, Reflect.field(obj, f));
-			}
-			return ret;
 		}
 	}
 

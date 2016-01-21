@@ -19,31 +19,41 @@ class Test {
 		}
 	}
 
-	function test():Void {
+	@:final function test():Void {
 		firstTestDone = createAsync();
 		middleTestDone = createAsync();
 		lastTestDone = createAsync();
-		firstTest();
-		middleTest();
-		lastTest();
+		Future.ofMany([for (f in firstTest()) f()])
+			.flatMap(function(_) return Future.ofMany([for (f in middleTest()) f()]))
+			.flatMap(function(_) return Future.ofMany([for (f in lastTest()) f()]))
+			.handle(function(_){});
 
 		// avoid no assertion
-		isTrue(true);
+		pass();
 	}
 
 	var firstTestDone:Void->Void;
 	var middleTestDone:Void->Void;
 	var lastTestDone:Void->Void;
-	function firstTest():Void {
-		firstTestDone();
+	function firstTest():Array<Void->Future<Noise>> {
+		return [function() return Future.async(function(ret){
+			firstTestDone();
+			ret(Noise);
+		})];
 	}
 
-	function middleTest():Void {
-		middleTestDone();
+	function middleTest():Array<Void->Future<Noise>> {
+		return [function() return Future.async(function(ret){
+			middleTestDone();
+			ret(Noise);
+		})];
 	}
 
-	function lastTest():Void {
-		lastTestDone();
+	function lastTest():Array<Void->Future<Noise>> {
+		return [function() return Future.async(function(ret){
+			lastTestDone();
+			ret(Noise);
+		})];
 	}
 
 	static function main():Void {
@@ -53,10 +63,19 @@ class Test {
 			case [user, apiKey]:
 				new Authentication(user, apiKey);
 		}
-		var runner = new Runner();
-		runner.addCase(new TestContent(auth));
-		runner.addCase(new TestDownload(auth));
-		Report.create(runner);
-		runner.run();
+
+		switch (Sys.args()) {
+			case ["clean"]:
+				new TestContent(auth).clean()
+					.handle(function(_){
+						Sys.println("done");
+					});
+			case _:
+				var runner = new Runner();
+				runner.addCase(new TestContent(auth));
+				runner.addCase(new TestDownload(auth));
+				Report.create(runner);
+				runner.run();
+		}
 	}
 }

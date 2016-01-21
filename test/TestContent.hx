@@ -12,80 +12,91 @@ class TestContent extends TestVersion {
 	public var fileSha1(get, null):String = null;
 	function get_fileSha1() return fileSha1 != null ? fileSha1 : fileSha1 = haxe.crypto.Sha1.make(fileBytes).toHex();
 
-	override function firstTest():Void {
-		super.firstTest();
-
-		// call api without user/key
-		var file = new BytesInput(fileBytes);
-		var done = createAsync();
-		var bintray = new Bintray();
-		bintray.uploadContent(file, file.length, subject, repo, pack, version, file_path.toString())
-			.handle(function(out){
-				isTrue(out.match(Failure(_)));
-				done();
-			});
-
-		// should success
-		var file = new BytesInput(fileBytes);
-		var done = createAsync();
-		var bintray = new Bintray(auth);
-		bintray.uploadContent(file, file.length, subject, repo, pack, version, file_path.toString())
-			.handle(function(out){
-				isSuccess(out);
-				done();
-			});
+	override function firstTest() {
+		return super.firstTest().concat([
+			function(){
+				// call api without user/key
+				var file = new BytesInput(fileBytes);
+				var done = createAsync();
+				var bintray = new Bintray();
+				return bintray.uploadContent(file, file.length, subject, repo, pack, version, file_path.toString())
+					.map(function(out):Noise {
+						isTrue(out.match(Failure(_)));
+						done();
+						return Noise;
+					});
+			},
+			function(){
+				// should success
+				var file = new BytesInput(fileBytes);
+				var done = createAsync();
+				var bintray = new Bintray(auth);
+				return bintray.uploadContent(file, file.length, subject, repo, pack, version, file_path.toString())
+					.map(function(out):Noise {
+						isSuccess(out);
+						done();
+						return Noise;
+					});
+			},
+		]);
 	}
 
-	override function lastTest():Void {
-		// call api without user/key
-		var done = createAsync();
-		var bintray = new Bintray();
-		bintray.deleteContent(subject, repo, file_path.toString())
-			.handle(function(out){
-				isTrue(out.match(Failure(_)));
-				done();
-			});
-
-		// should success
-		var done = createAsync();
-		var bintray = new Bintray(auth);
-		bintray.deleteContent(subject, repo, file_path.toString())
-			.handle(function(out){
-				isSuccess(out);
-				done();
-			});
-
-		super.lastTest();
+	override function lastTest() {
+		return [
+			function(){
+				// call api without user/key
+				var done = createAsync();
+				var bintray = new Bintray();
+				return bintray.deleteContent(subject, repo, file_path.toString())
+					.map(function(out):Noise {
+						isTrue(out.match(Failure(_)));
+						done();
+						return Noise;
+					});
+			},
+			function(){
+				// should success
+				var done = createAsync();
+				var bintray = new Bintray(auth);
+				return bintray.deleteContent(subject, repo, file_path.toString())
+					.map(function(out):Noise {
+						isSuccess(out);
+						done();
+						return Noise;
+					});
+			},
+		].concat(super.lastTest());
 	}
 
-	override function middleTest():Void {
-		super.middleTest();
-
-		publishUploadedContent();
-		getPackageFiles();
-		getVersionFiles();
-		fileSearchByName();
-		fileSearchByChecksum();
-		fileInDownloadList();
+	override function middleTest() {
+		return super.middleTest().concat([
+			publishUploadedContent,
+			getPackageFiles,
+			getVersionFiles,
+			fileSearchByName,
+			fileSearchByChecksum,
+			fileInDownloadList,
+		]);
 	}
 
-	function publishUploadedContent():Void {
+	function publishUploadedContent() {
 		var done = createAsync();
 		var bintray = new Bintray(auth);
-		bintray.publishUploadedContent(subject, repo, pack, version, -1)
-			.handle(function(out){
+		return bintray.publishUploadedContent(subject, repo, pack, version, -1)
+			.map(function(out):Noise {
 				isSuccess(out);
 				var num = out.sure();
 				equals(1, num);
 				done();
+				return Noise;
 			});
 	}
 
-	function getPackageFiles():Void {
+	function getPackageFiles() {
 		var done = createAsync();
 		var bintray = new Bintray(auth);
-		bintray.getPackageFiles(subject, repo, pack, true)
-			.handle(function(out){
+		return bintray.getPackageFiles(subject, repo, pack, true)
+			.map(function(out):Noise {
 				var files = out.sure();
 				equals(1, files.length);
 				var file = files[0];
@@ -95,14 +106,15 @@ class TestContent extends TestVersion {
 				equals(auth.user, file.owner);
 				equals(fileSha1, file.sha1);
 				done();
+				return Noise;
 			});
 	}
 
-	function getVersionFiles():Void {
+	function getVersionFiles() {
 		var done = createAsync();
 		var bintray = new Bintray(auth);
-		bintray.getVersionFiles(subject, repo, pack, version, true)
-			.handle(function(out){
+		return bintray.getVersionFiles(subject, repo, pack, version, true)
+			.map(function(out):Noise {
 				var files = out.sure();
 				equals(1, files.length);
 				var file = files[0];
@@ -112,14 +124,15 @@ class TestContent extends TestVersion {
 				equals(auth.user, file.owner);
 				equals(fileSha1, file.sha1);
 				done();
+				return Noise;
 			});
 	}
 
-	function fileSearchByName():Void {
+	function fileSearchByName() {
 		var done = createAsync();
 		var bintray = new Bintray(auth);
-		bintray.fileSearchByName(file_path.file, subject, repo)
-			.handle(function(out){
+		return bintray.fileSearchByName(file_path.file, subject, repo)
+			.map(function(out):Noise {
 				var files = out.sure();
 				equals(1, files.length);
 				var file = files[0];
@@ -129,14 +142,15 @@ class TestContent extends TestVersion {
 				equals(auth.user, file.owner);
 				equals(fileSha1, file.sha1);
 				done();
+				return Noise;
 			});
 	}
 
-	function fileSearchByChecksum():Void {
+	function fileSearchByChecksum() {
 		var done = createAsync();
 		var bintray = new Bintray(auth);
-		bintray.fileSearchByChecksum(fileSha1, subject, repo)
-			.handle(function(out){
+		return bintray.fileSearchByChecksum(fileSha1, subject, repo)
+			.map(function(out):Noise {
 				var files = out.sure();
 				equals(1, files.length);
 				var file = files[0];
@@ -145,16 +159,18 @@ class TestContent extends TestVersion {
 				equals(pack, file.pack);
 				equals(auth.user, file.owner);
 				done();
+				return Noise;
 			});
 	}
 
-	function fileInDownloadList():Void {
+	function fileInDownloadList() {
 		var done = createAsync();
 		var bintray = new Bintray(auth);
-		bintray.fileInDownloadList(subject, repo, file_path.toString(), true)
-			.handle(function(out){
+		return bintray.fileInDownloadList(subject, repo, file_path.toString(), true)
+			.map(function(out):Noise {
 				isSuccess(out);
 				done();
+				return Noise;
 			});
 	}
 }
