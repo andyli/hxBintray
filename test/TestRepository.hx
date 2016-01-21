@@ -5,9 +5,9 @@ import utest.Assert.*;
 using Lambda;
 
 class TestRepository extends Test {
-	var repo(get, null):String;
+	public var repo(get, null):String;
 	function get_repo() return repo != null ? repo : repo = "hxBintray_test_repo_" + Std.random(1000);
-	var subject(get, never):String;
+	public var subject(get, never):String;
 	function get_subject() return auth.user;
 
 	override function firstTest():Void {

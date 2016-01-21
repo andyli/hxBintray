@@ -4,7 +4,7 @@ using tink.core.Outcome;
 import utest.Assert.*;
 
 class TestPackage extends TestRepository {
-	var pack(default, never):String = "test_package";
+	public var pack(default, never):String = "test_package";
 
 	override function firstTest():Void {
 		super.firstTest();

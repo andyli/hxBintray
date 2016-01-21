@@ -261,7 +261,9 @@ class Bintray {
 				http.addParameter("override", "1");
 			if (explode)
 				http.addParameter("explode", "1");
-			http.setPostData(file.readAll(fileSize).toString());
+			http.addHeader("Content-Type", "application/octet-stream");
+			var fileData = file.readAll(fileSize).toString();
+			http.setPostData(fileData);
 			var error = null;
 			http.onError = function(err) error = err;
 			http.customRequest(false, out, null, "PUT");

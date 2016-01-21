@@ -4,7 +4,7 @@ using tink.core.Outcome;
 import utest.Assert.*;
 
 class TestVersion extends TestPackage {
-	var version(default, never):String = "0.1.0";
+	public var version(default, never):String = "0.1.0";
 
 	override function firstTest():Void {
 		super.firstTest();

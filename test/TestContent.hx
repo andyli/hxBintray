@@ -5,16 +5,18 @@ import utest.Assert.*;
 import haxe.io.*;
 
 class TestContent extends TestVersion {
-	var file_path(default, never):Path = new Path("path/to/something.txt");
-	var fileContent(default, never):String = "something here";
+	public var file_path(default, never):Path = new Path("path/to/something.txt");
+	public var fileContent(default, never):String = "something here";
+	public var fileBytes(get, null):Bytes = null;
+	function get_fileBytes() return fileBytes != null ? fileBytes : fileBytes = Bytes.ofString(fileContent);
+	public var fileSha1(get, null):String = null;
+	function get_fileSha1() return fileSha1 != null ? fileSha1 : fileSha1 = haxe.crypto.Sha1.make(fileBytes).toHex();
 
 	override function firstTest():Void {
 		super.firstTest();
 
-		var fileBytes = Bytes.ofString(fileContent);
-		var file = new BytesInput(fileBytes);
-
 		// call api without user/key
+		var file = new BytesInput(fileBytes);
 		var done = createAsync();
 		var bintray = new Bintray();
 		bintray.uploadContent(file, file.length, subject, repo, pack, version, file_path.toString())
@@ -24,6 +26,7 @@ class TestContent extends TestVersion {
 			});
 
 		// should success
+		var file = new BytesInput(fileBytes);
 		var done = createAsync();
 		var bintray = new Bintray(auth);
 		bintray.uploadContent(file, file.length, subject, repo, pack, version, file_path.toString())
@@ -90,6 +93,7 @@ class TestContent extends TestVersion {
 				equals(repo, file.repo);
 				equals(pack, file.pack);
 				equals(auth.user, file.owner);
+				equals(fileSha1, file.sha1);
 				done();
 			});
 	}
@@ -106,6 +110,7 @@ class TestContent extends TestVersion {
 				equals(repo, file.repo);
 				equals(pack, file.pack);
 				equals(auth.user, file.owner);
+				equals(fileSha1, file.sha1);
 				done();
 			});
 	}
@@ -122,6 +127,7 @@ class TestContent extends TestVersion {
 				equals(repo, file.repo);
 				equals(pack, file.pack);
 				equals(auth.user, file.owner);
+				equals(fileSha1, file.sha1);
 				done();
 			});
 	}
@@ -129,16 +135,7 @@ class TestContent extends TestVersion {
 	function fileSearchByChecksum():Void {
 		var done = createAsync();
 		var bintray = new Bintray(auth);
-		bintray.getVersionFiles(subject, repo, pack, version, true)
-			.map(function(out){
-				var files = out.sure();
-				equals(1, files.length);
-				var file = files[0];
-				return file.sha1;
-			})
-			.flatMap(function(sha1)
-				return bintray.fileSearchByChecksum(sha1, subject, repo)
-			)
+		bintray.fileSearchByChecksum(fileSha1, subject, repo)
 			.handle(function(out){
 				var files = out.sure();
 				equals(1, files.length);
