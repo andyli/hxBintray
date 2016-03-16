@@ -1,0 +1,15 @@
+{
+  "name": "hxBintray",
+  "url": "http://github.com/andyli/hxBintray",
+  "license": "Public",
+  "tags": [],
+  "description": "A Haxe client for the Bintray REST API.",
+  "version": "0.0.1",
+  "releasenote": "initial release",
+  "contributors": ["andyli"],
+  "classPath": "src",
+  "dependencies": {
+    "tink_core": "",
+	"hxssl": ""
+  }
+}
